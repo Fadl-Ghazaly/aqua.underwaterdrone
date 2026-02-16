@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQUADRON - Water Quality Monitoring</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Database -->
+    <script src="database.js" defer></script>
+    
+    <!-- Main Script -->
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER SECTION -->
+        <header class="header">
+            <div class="logo">
+                <h1>💧 AQUADRON</h1>
+                <p>Underwater Drone Water Quality Monitoring System</p>
+            </div>
+            <div class="project-badge">
+                <span class="badge">pH • TDS • Turbidity</span>
+                <span class="badge">Real-time Monitoring</span>
+            </div>
+        </header>
+
+        <!-- CONNECTION PANEL -->
+        <section class="connection-panel">
+            <div class="panel-left">
+                <button id="connectBtn" class="btn btn-primary">
+                    <span class="btn-icon">🔌</span>
+                    Connect ESP32
+                </button>
+                <button id="disconnectBtn" class="btn btn-warning" style="display: none;">
+                    <span class="btn-icon">⛔</span>
+                    Disconnect
+                </button>
+                
+                <div class="connection-info">
+                    <div id="connectionStatus" class="status-indicator disconnected">
+                        <span class="status-dot"></span>
+                        Status: Disconnected
+                    </div>
+                    <div id="dataCount" class="data-counter">
+                        📊 Data: 0 samples
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-right">
+                <div class="last-update">
+                    🕐 Last Update: <span id="lastUpdate">--:--:--</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SENSOR GRID -->
+        <section class="sensor-grid">
+            <!-- pH Card -->
+            <div class="sensor-card" id="phCard">
+                <div class="card-header">
+                    <div class="sensor-icon">🧪</div>
+                    <div class="sensor-title">
+                        <h3>pH Level</h3>
+                        <span class="sensor-unit">(0-14)</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="sensor-value">
+                        <span id="phValue" class="value-number">--</span>
+                        <span class="value-unit">pH</span>
+                    </div>
+                    <div class="sensor-range">
+                        <span class="range-label">Normal:</span>
+                        <span class="range-value">6.5 - 8.5</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span id="phStatus" class="status-badge">Waiting...</span>
+                    <span id="phTimestamp" class="timestamp"></span>
+                </div>
+            </div>
+
+            <!-- TDS Card -->
+            <div class="sensor-card" id="tdsCard">
+                <div class="card-header">
+                    <div class="sensor-icon">💊</div>
+                    <div class="sensor-title">
+                        <h3>TDS</h3>
+                        <span class="sensor-unit">(ppm)</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="sensor-value">
+                        <span id="tdsValue" class="value-number">--</span>
+                        <span class="value-unit">ppm</span>
+                    </div>
+                    <div class="sensor-range">
+                        <span class="range-label">Batas Aman:</span>
+                        <span class="range-value">&lt; 500 ppm</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span id="tdsStatus" class="status-badge">Waiting...</span>
+                    <span id="tdsTimestamp" class="timestamp"></span>
+                </div>
+            </div>
+
+            <!-- Turbidity Card -->
+            <div class="sensor-card" id="turbCard">
+                <div class="card-header">
+                    <div class="sensor-icon">🌊</div>
+                    <div class="sensor-title">
+                        <h3>Turbidity</h3>
+                        <span class="sensor-unit">(NTU)</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="sensor-value">
+                        <span id="turbValue" class="value-number">--</span>
+                        <span class="value-unit">NTU</span>
+                    </div>
+                    <div class="sensor-range">
+                        <span class="range-label">Air Jernih:</span>
+                        <span class="range-value">&lt; 5 NTU</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span id="turbStatus" class="status-badge">Waiting...</span>
+                    <span id="turbTimestamp" class="timestamp"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHART SECTION -->
+        <section class="chart-container">
+            <div class="chart-header">
+                <h2>📈 Real-time Monitoring</h2>
+                <div class="chart-controls">
+                    <select id="chartTimeRange" class="chart-select">
+                        <option value="1">Last 1 hour</option>
+                        <option value="6" selected>Last 6 hours</option>
+                        <option value="12">Last 12 hours</option>
+                        <option value="24">Last 24 hours</option>
+                        <option value="168">Last 7 days</option>
+                    </select>
+                    <button id="refreshChart" class="btn btn-small">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="sensorChart"></canvas>
+            </div>
+        </section>
+
+        <!-- STATISTICS SECTION -->
+        <section class="stats-container">
+            <h2>📊 Statistik</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🧪</div>
+                    <div class="stat-info">
+                        <span class="stat-label">pH Rata-rata</span>
+                        <span id="avgPh" class="stat-value">--</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💊</div>
+                    <div class="stat-info">
+                        <span class="stat-label">TDS Rata-rata</span>
+                        <span id="avgTds" class="stat-value">-- ppm</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🌊</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Turbidity Rata-rata</span>
+                        <span id="avgTurb" class="stat-value">-- NTU</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Total Sesi</span>
+                        <span id="totalSessions" class="stat-value">0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DATA TABLE SECTION -->
+        <section class="table-container">
+            <div class="table-header">
+                <h2>📋 Riwayat Data</h2>
+                <div class="table-controls">
+                    <button id="exportCSV" class="btn btn-success">
+                        📥 Export CSV
+                    </button>
+                    <button id="exportJSON" class="btn btn-info">
+                        📋 Export JSON
+                    </button>
+                    <button id="clearData" class="btn btn-warning">
+                        🗑️ Clear Data
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-wrapper">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>pH</th>
+                            <th>TDS (ppm)</th>
+                            <th>Turbidity (NTU)</th>
+                            <th>Status Air</th>
+                            <th>Kelayakan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr class="empty-row">
+                            <td colspan="6">Belum ada data. Connect ESP32 untuk memulai monitoring.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="table-footer">
+                <span>Menampilkan <span id="displayCount">0</span> data terbaru</span>
+                <div class="pagination">
+                    <button id="prevPage" class="btn-pagination" disabled>← Prev</button>
+                    <span id="pageInfo">Halaman 1</span>
+                    <button id="nextPage" class="btn-pagination" disabled>Next →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ALERT SECTION -->
+        <section class="alert-container">
+            <h2>⚠️ Notifikasi</h2>
+            <div id="alertList" class="alert-list">
+                <div class="alert-info">Sistem siap. Connect ESP32 untuk memulai.</div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            <p>© 2026 AQUADRON - Underwater Drone Water Quality Monitoring</p>
+            <p class="small">Sensor: pH | TDS | Turbidity • Microcontroller: ESP32</p>
+        </footer>
+    </div>
+</body>
+</html>
